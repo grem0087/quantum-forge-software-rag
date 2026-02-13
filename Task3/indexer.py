@@ -11,14 +11,14 @@ def get_embedding_function(model_name: str):
         query_instruction="", 
     )
 
-def create_or_get_collection(chroma_path: str):
+def create_or_get_collection(chroma_path: str, collection_name: str):
     client = chromadb.PersistentClient(path=chroma_path)
     try:
-        collection = client.get_collection(name="koprulu_myths")
+        collection = client.get_collection(name=collection_name)
         print("Коллекция уже существует, используем её")
     except:
         collection = client.create_collection(
-            name="koprulu_myths",
+            name=collection_name,
             metadata={"hnsw:space": "cosine"} 
         )
         print("Создана новая коллекция")
