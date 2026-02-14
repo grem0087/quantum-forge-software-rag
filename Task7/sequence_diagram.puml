@@ -1,0 +1,88 @@
+@startuml
+title Обработка запроса и оценка качества RAG-бота
+
+actor "evaluate.py" as Eval
+participant "RAG-бот" as Bot
+participant "Retriever\n(ChromaDB)" as DB
+participant "Chunk Filter" as CF
+participant "LLM\n(Ollama)" as LLM
+participant "Output Filter" as OF
+participant "Classifier\n(classify)" as CLS
+database "logs.csv" as Log
+
+== Загрузка golden_questions.txt ==
+
+Eval -> Eval : load_golden()
+
+== Цикл по вопросам ==
+
+loop для каждого вопроса
+
+    Eval -> Bot : ask(question)
+    activate Bot
+
+    Bot -> DB : invoke(question)
+    activate DB
+
+    alt индекс пуст или ошибка
+        DB --> Bot : ERROR
+        Bot --> Eval : "[ERROR] ..."
+    else чанки найдены
+        DB --> Bot : retrieved_docs
+    end
+    deactivate DB
+
+    Bot -> CF : filter_documents(docs)
+    activate CF
+    alt вредоносный чанк
+        CF --> Bot : safe_docs (без опасных)
+    else все безопасны
+        CF --> Bot : safe_docs (все)
+    end
+    deactivate CF
+
+    alt все чанки заблокированы
+        Bot --> Eval : "Все документы отфильтрованы"
+    else есть безопасные чанки
+        Bot -> LLM : prompt(context + question)
+        activate LLM
+        alt LLM недоступен
+            LLM --> Bot : ERROR
+            Bot --> Eval : "[ERROR] ..."
+        else ответ получен
+            LLM --> Bot : answer
+        end
+        deactivate LLM
+
+        Bot -> OF : check_output(answer)
+        activate OF
+        alt утечка данных
+            OF --> Bot : blocked
+            Bot --> Eval : "Ответ заблокирован"
+        else ответ безопасен
+            OF --> Bot : ok
+            Bot --> Eval : answer
+        end
+        deactivate OF
+    end
+    deactivate Bot
+
+    == Оценка ==
+
+    Eval -> CLS : classify(answer,\nexpected_status, keywords)
+    activate CLS
+    CLS -> CLS : проверка маркеров отказа
+    CLS -> CLS : поиск ключевых слов
+    CLS -> CLS : расчет confidence
+    CLS --> Eval : correct, confidence,\nkeywords_found
+    deactivate CLS
+
+    Eval -> Log : write_csv_row(...)
+
+end
+
+== Итоги ==
+
+Eval -> Eval : generate_report(results)
+
+@enduml
