@@ -1,9 +1,6 @@
-# rag_bot.py — RAG-бот по копрулуским легендам (chromadb 1.0.0 + langchain 0.3.16)
-
 import sys
 from pathlib import Path
 
-# Путь к Task3 (на уровень выше)
 TASK3_DIR = Path(__file__).resolve().parent.parent / "Task3"
 sys.path.append(str(TASK3_DIR))
 
@@ -29,7 +26,7 @@ class KopruluRAGBot:
         self.chroma_path = chroma_path or str(TASK3_DIR / RELATIVE_CHROMA_PATH)
         print(f"[INIT] ChromaDB: {self.chroma_path}")
 
-        # Эмбеддер GPU!
+        # Эмбеддер GPU
         self.embedding_function = HuggingFaceBgeEmbeddings(
             model_name=EMBEDDING_MODEL_NAME,
             model_kwargs={"device": "cuda"},

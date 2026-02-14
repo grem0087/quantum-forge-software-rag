@@ -1,17 +1,12 @@
-# === Основные зависимости (строго фиксированные) ===
 langchain==0.3.16
 langchain-community==0.3.16
 langchain-text-splitters==0.3.11
 langchain-ollama==0.3.0
 chromadb==1.0.0
 sentence-transformers==3.0.1
-
-# === Torch и GPU ===
 torch==2.6.0
 torchvision==0.21.0
 torchaudio==2.6.0
-
-# === Остальное ===
 numpy==2.1.1
 pydantic==2.9.2
 pydantic-settings==2.5.2

@@ -1,0 +1,41 @@
+@startuml
+title Архитектура автоматического обновления RAG-индекса
+
+
+folder "data_upload/" as upload {
+    file "new_doc_1.md" as doc1
+    file "..." as docN
+}
+
+node "Windows Task Scheduler" as scheduler {
+    component "Задача:\nUpdateRAGIndex\nЕжедневно 06:00\nПовтор при ошибке:\n3 попытки / 10 мин" as task
+}
+
+node "update_index.py" as script {
+    component "1. Сканирование\ndata_upload/" as scan
+    component "2. Чанкование\nRecursiveCharacterTextSplitter\nchunk=950, overlap=120" as chunker
+    component "3. Эмбеддинги\nBAAI/bge-m3 (GPU)" as embedder
+    component "4. Обновление\nChromaDB" as updater
+    component "5. Удаление\nобработанных файлов" as cleanup
+}
+
+database "ChromaDB\nchroma_db/\nkoprulu_myths" as chromadb
+file "update_index_log.txt" as logfile
+
+component "run_update.bat" as bat
+
+scheduler --> bat : запуск
+bat --> script : python update_index.py
+
+upload --> scan : новые .md файлы
+scan --> chunker : тексты
+chunker --> embedder : чанки
+embedder --> updater : векторы
+updater --> chromadb : upsert
+updater --> cleanup : очистка
+
+cleanup --> upload : удаление\nобработанных
+
+script --> logfile : логирование\n(время, чанки,\nошибки)
+
+@enduml
